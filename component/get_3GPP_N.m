@@ -14,15 +14,7 @@ function N = get_3GPP_N(K,E,n_max)
 %   number of bits in the input and output of the polar encoder kernal.
 %   n_max = 9 in the PBCH and PDCCH channels, while n_max = 10 in the PUCCH
 %   channel.
-%
-% Copyright � 2017 Robert G. Maunder. This program is free software: you 
-% can redistribute it and/or modify it under the terms of the GNU General 
-% Public License as published by the Free Software Foundation, either 
-% version 3 of the License, or (at your option) any later version. This 
-% program is distributed in the hope that it will be useful, but WITHOUT 
-% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-% FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
-% more details.
+
 
 
 if E <= (9/8)*2^(ceil(log2(E))-1) && K/E < 9/16

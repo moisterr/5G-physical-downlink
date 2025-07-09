@@ -12,14 +12,7 @@ function Q_N = get_3GPP_sequence_pattern(N)
 %   next most reliable input to the polar encoder kernal, where the first
 %   element of Q_N gives the index of the least reliable bit and the last
 %   element gives the index of the most reliable bit.
-%
-% Copyright � 2017 Robert G. Maunder. This program is free software: you 
-% can redistribute it and/or modify it under the terms of the GNU General 
-% Public License as published by the Free Software Foundation, either 
-% version 3 of the License, or (at your option) any later version. This 
-% program is distributed in the hope that it will be useful, but WITHOUT 
-% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-% FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+%LAR PURPOSE. See the GNU General Public License for 
 % more details.
 
 if log2(N) ~= round(log2(N))

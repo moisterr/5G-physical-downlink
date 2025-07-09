@@ -13,15 +13,7 @@ function Pi = get_3GPP_crc_interleaver_pattern(K)
 %   can be implemented according to c = b(Pi), while
 %   deinterleaving is implemented accoring to 
 %   b_hat(Pi) = c_hat.
-%
-% Copyright � 2017 Robert G. Maunder. This program is free software: you 
-% can redistribute it and/or modify it under the terms of the GNU General 
-% Public License as published by the Free Software Foundation, either 
-% version 3 of the License, or (at your option) any later version. This 
-% program is distributed in the hope that it will be useful, but WITHOUT 
-% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-% FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
-% more details.
+
 
 % Note that TS38.212 defines a 164-bit interleaver, which can be shortened
 % to interleave fewer bits. During the standardisation process, a 224-bit
