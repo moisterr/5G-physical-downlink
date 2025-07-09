@@ -10,16 +10,23 @@ disp(a);
 f = PBCH_encode(a);        % Encoded bits (864 bits)
 disp('Polar Encoded:');
 disp(f);
-
-% 3. Scrambling (giả lập)
 c = f; 
 
 % 4. Modulation
 moduType = 'QPSK';
 symb = nrModuMapper(c, moduType);
 
-scatter(real(symb), imag(symb), 'filled');
-axis equal; grid on;
-xlabel('In-phase'); ylabel('Quadrature');
-title('Modulated Symbols for PBCH (QPSK)');
+% qpsk option
+% scatter(real(symb), imag(symb), 'filled');
+% axis equal; grid on;
+% xlabel('In-phase'); ylabel('Quadrature');
+% title('Modulated Symbols for PBCH (QPSK)');
 
+
+% 5. Resource Element Mapping
+ncellid = 42; % Physical Cell ID
+grid = ssb_grid();
+ans = mapped_ssb(grid, symb, ncellid);
+
+% 6. Visualize resource mapping
+visualize_ssb_grid(ans, ncellid);
