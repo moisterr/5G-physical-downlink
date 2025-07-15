@@ -8,7 +8,32 @@ function pssSymbols = generatePssSymbols(ncellid)
     %   Args:
     %       ncellid (int): The Physical Cell ID (0-1007).
     %
+    %   Returns:% File: component/generatePssSymbols.m
+
+function pssSymbols = generatePssSymbols(ncellid)
+    % generatePssSymbols: Generates the 127 BPSK symbols for the 5G NR PSS.
+    %   Args:
+    %       ncellid (int): The Physical Cell ID (0-1007).
     %   Returns:
+    %       pssSymbols (double array): A 127x1 column vector of PSS symbols (-1 or 1).
+
+    % Determine u from NID(2)
+    % NID(2) = ncellid mod 3
+    u = mod(ncellid, 3);
+
+    % PSS m-sequence initial state is fixed: [1 1 1 0 1 1 0] (x[6]...x[0])
+    % Convert to x[0]...x[6] for generateMSequenceCommon
+    pss_m_seq_initial_state = [0, 1, 1, 0, 1, 1, 1];
+    
+    % Call the common m-sequence generator
+    x_sequence = generateMSequenceCommon(127, pss_m_seq_initial_state);
+    
+    pssSymbols = zeros(127, 1);
+    for n = 0:126
+        index_in_x = mod((n + 43 * u), 127) + 1; % +1 for 1-based indexing
+        pssSymbols(n + 1) = 1 - 2 * x_sequence(index_in_x);
+    end
+end
     %       pssSymbols (double array): A 127x1 column vector of PSS symbols (-1 or 1).
 
     % Determine u from NID(2)
