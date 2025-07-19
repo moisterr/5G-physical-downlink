@@ -55,13 +55,8 @@ catch ME
     disp('Encoding failed. Please check your PDCCH_encode function and its dependencies.');
 end
 
-% You can continue with modulation (similar to PBCH_test.m) if needed
-% (Assuming 'nrModuMapper' is available in your 'component' folder or MATLAB's built-in functions)
-% Uncomment the following lines if you want to test modulation as well:
-%{
 if exist('f', 'var') && ~isempty(f) && length(f) > 0
     c = f; % Assign encoded bits to 'c' for modulation
-
     % 5. Modulation
     moduType = 'QPSK';
     try
@@ -71,7 +66,6 @@ if exist('f', 'var') && ~isempty(f) && length(f) > 0
         disp('Modulation successful.');
         disp(['Number of Modulated Symbols: ', num2str(length(symb))]);
         disp(symb(1:min(15, end))); % Display first 15 complex symbols
-
         % Plotting QPSK constellation
         figure;
         scatter(real(symb), imag(symb), 'filled');
@@ -85,4 +79,3 @@ if exist('f', 'var') && ~isempty(f) && length(f) > 0
         disp('Modulation failed. Please ensure nrModuMapper is correctly implemented or available.');
     end
 end
-%}
