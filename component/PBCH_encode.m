@@ -1,66 +1,53 @@
 function f = PBCH_encode(a, E)
-% PBCH_ENCODER Polar encoder for the Public Broadcast Channel (PBCH) of 3GPP New Radio, as
-% defined in Section 7.1 of TS38.212. Implements the Cyclic Redudancy
-% Check (CRC) attachment of Section 7.1.3, the channel coding of Section 7.1.4
-% and the rate matching of Section 7.1.5. Note that this code does not
-% implement the payload generation of Section 7.1.1 or the scrambling of
-% Section 7.1.2.
-%   f = PBCH_ENCODER(a, E) encodes the information bit sequence a, in
-%   order to obtain the encoded bit sequence e.
-%
-%   a should be a binary row vector comprising 32 bits, each
-%   having the value 0 or 1. The first input bit corresponds to a'_0 from 
-%   Section 7.1.3 of TS38.212, while the last input bit corresponds 
-%   to a'_A-1.
-%
-%   E should be 864. It specifies the number of bits in the
-%   encoded bit sequence. Since there is only one valid value for this 
-%   parameter, it can be omitted.
-%
-%   f will be a binary row vector comprising 864 bits, each having
-%   the value 0 or 1. The first output bit corresponds to f_0 from Section 
-%   7.1.5 of TS38.212, while the last output bit corresponds to 
-%   f_E-1.
+% PBCH_encode performs Polar encoding for 5G NR PBCH channel as per 3GPP 38.212.
+% Inputs:
+%   a - 32-bit input message vector (usually MIB bits)
+%   E - (Optional) encoded output length, default is 864 bits
+% Output:
+%   f - Polar-encoded output vector of length E
 
-addpath component\
+addpath component\  % Add path to directory containing dependent functions
 
-A = length(a);
+A = length(a);  % Input message length
 
-% A is always 32 in PBCH
 if A ~= 32
     error('polar_3gpp_matlab:UnsupportedBlockLength','A should be 32.');
 end
-% E is always 864 in PBCH
-if nargin<2
-    E = 864;
+
+if nargin < 2
+    E = 864;  % Default output length if not specified
 end
+
 if E ~= 864
     error('polar_3gpp_matlab:UnsupportedBlockLength','E should be 864.');
 end
 
-% The CRC polynomial used in 3GPP PBCH and PDCCH channel is
-% D^24 + D^23 + D^21 + D^20 + D^17 + D^15 + D^13 + D^12 + D^8 + D^4 + D^2 + D + 1
+% 3GPP CRC24C polynomial: generator = x^24 + x^23 + x^21 + ... + 1
 crc_polynomial_pattern = [1 1 0 1 1 0 0 1 0 1 0 1 1 0 0 0 1 0 0 0 1 0 1 1 1];
-P = length(crc_polynomial_pattern)-1;
+P = length(crc_polynomial_pattern) - 1;  % CRC length = 24
+K = A + P;  % Total info bits after CRC = 56
 
-% Determine the number of information and CRC bits.
-K = A+P; 
+% Determine N: block length of polar code (must be power of 2 ≥ K)
+% L = 9 for PBCH according to 3GPP
+N = get_3GPP_N(K, E, 9);  
 
-% Determine the number of bits used at the input and output of the polar
-% encoder kernal.
-N = get_3GPP_N(K,E,9); % n_max = 9 is used in PBCH and PDCCH channels
-
-% Get the 3GPP CRC interleaver pattern.
+% Interleaver pattern applied on CRC bits before appending
 crc_interleaver_pattern = get_3GPP_crc_interleaver_pattern(K);
 
-% Get the 3GPP rate matching pattern.
-[rate_matching_pattern, mode] = get_3GPP_rate_matching_pattern(K,N,E);
+% Get rate matching pattern and mode (e.g., repetition/puncturing/shortening)
+[rate_matching_pattern, mode] = get_3GPP_rate_matching_pattern(K, N, E);
 
-% Get the 3GPP sequence pattern.
+% Q_N is the bit-channel reliability order (descending)
 Q_N = get_3GPP_sequence_pattern(N);
 
-% Get the 3GPP information bit pattern.
+% Determine positions of information bits (including CRC) in length-N vector
 info_bit_pattern = get_3GPP_info_bit_pattern(K, Q_N, rate_matching_pattern, mode);
 
-% Perform Distributed-CRC-Aided polar encoding.
-f = DCA_polar_encoder(a,crc_polynomial_pattern,crc_interleaver_pattern,info_bit_pattern,rate_matching_pattern);
+% Perform full Polar encoding pipeline:
+% - Append CRC
+% - Interleave CRC
+% - Place info bits in specified positions
+% - Polar encode
+% - Rate match to length E
+f = DCA_polar_encoder(a, crc_polynomial_pattern, crc_interleaver_pattern, info_bit_pattern, rate_matching_pattern);
+end

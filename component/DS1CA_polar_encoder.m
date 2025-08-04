@@ -1,88 +1,82 @@
 function e = DS1CA_polar_encoder(a, crc_polynomial_pattern, crc_scrambling_pattern, crc_interleaver_pattern, info_bit_pattern, rate_matching_pattern)
-% DS1CA_POLAR_ENCODER Distributed-Scrambled-and-1-initialised-CRC-Aided (DS1CA) polar encoder.
-%   e = DS1CA_POLAR_ENCODER(a, crc_polynomial_pattern, crc_interleaver_pattern, info_bit_pattern, rate_matching_pattern) 
-%   encodes the information bit sequence a, in order to obtain the encoded 
-%   bit sequence e.
+% DS1CA_POLAR_ENCODER - Custom Polar encoder with CRC scrambling for DS1-CA format
 %
-%   a should be a binary row vector comprising A number of bits, each 
-%   having the value 0 or 1. 
+% Inputs:
+%   a: Input information bits (1 x A)
+%   crc_polynomial_pattern: Generator polynomial for CRC (1 x (P+1))
+%   crc_scrambling_pattern: Scrambling bits to be XOR-ed with CRC (1 x P_s)
+%   crc_interleaver_pattern: Pattern to permute bits before Polar encoding (1 x K)
+%   info_bit_pattern: Binary vector of size 1 x N with K ones (defines info bit positions)
+%   rate_matching_pattern: Index vector to perform rate matching to output E bits
 %
-%   crc_polynomial_pattern should be a binary row vector comprising P+1
-%   number of bits, each having the value 0 or 1. These bits parameterise a
-%   Cyclic Redundancy Check (CRC) comprising P bits. Each bit provides the
-%   coefficient of the corresponding element in the CRC generator
-%   polynomial. From left to right, the bits provide the coefficients for
-%   the elements D^P, D^P-1, D^P-2, ..., D^2, D, 1.
-%
-%   crc_scrambling_pattern should be a binary row vector, with each element
-%   having the value 0 or 1. This vector is right-aligned with the
-%   vector of CRC bits (before CRC interleaving in the encoder), then 
-%   applied using XOR operations.
-%
-%   crc_interleaver_pattern should be a row vector comprising K number of
-%   integers, each having a unique value in the range 1 to K. Each integer
-%   identifies which one of the K information or CRC bits provides the 
-%   corresponding bit in the input to the polar encoder kernal.
-%
-%   info_bit_pattern should be a row vector comprising N number of logical 
-%   elements, each having the value true or false. The number of elements 
-%   in info_bit_pattern having the value true should be K, where K = A+P. 
-%   These elements having the value true identify the positions of the 
-%   information and CRC bits within the input to the polar encoder kernal.
-%
-%   rate_matching_pattern should be a row vector comprising E number of
-%   integers, each having a value in the range 1 to N. Each integer
-%   identifies which one of the N outputs from the polar encoder kernal
-%   provides the corresponding bit in the encoded bit sequence e.
-%
-%   e will be a binary row vector comprising E number of bits, each having
-%   the value 0 or 1.
+% Output:
+%   e: Encoded, CRC-scrambled, rate-matched polar codeword (1 x E)
 
+% A = length of input message
 A = length(a);
-P = length(crc_polynomial_pattern)-1;
+
+% P = number of CRC bits (degree of CRC polynomial)
+P = length(crc_polynomial_pattern) - 1;
+
+% K = total number of bits after CRC interleaving (should equal A + P)
 K = length(crc_interleaver_pattern);
+
+% N = polar block length (must be power of 2)
 N = length(info_bit_pattern);
 
-if A+P ~= K
+% ---------- Input validation ----------
+if A + P ~= K
     error('A+P should equal K');
 end
+
 if log2(N) ~= round(log2(N))
     error('N should be a power of 2');
 end
+
 if sum(info_bit_pattern) ~= K
     error('info_bit_pattern should contain K number of ones.');
 end
+
 if max(rate_matching_pattern) > N
     error('rate_matching_pattern is not compatible with N');
 end
+
 if P < length(crc_scrambling_pattern)
-    error('polar_3gpp_matlab:UnsupportedBlockLength','K should be no less than the length of the scrambing pattern');
+    error('K should be no less than the length of the scrambling pattern');
 end
 
+% ---------- Step 1: CRC encoding ----------
+% Generate CRC generator matrix for full (A+P) input
+G_P = get_crc_generator_matrix(A + P, crc_polynomial_pattern);
 
-% Generate the CRC bits.
-G_P = get_crc_generator_matrix(A+P,crc_polynomial_pattern);
-crc_bits = mod([ones(1,P),a]*G_P,2);
+% Compute CRC over 'a', using extra leading ones as in 3GPP spec
+% Concatenate ones(1,P) and input bits, then apply G_P
+crc_bits = mod([ones(1, P), a] * G_P, 2);
 
-% Scramble the CRC bits.
-scrambled_crc_bits = xor(crc_bits,[zeros(1,P-length(crc_scrambling_pattern)),crc_scrambling_pattern]);
- 
-% Append the scrambled CRC bits to the information bits.
+% ---------- Step 2: CRC scrambling ----------
+% XOR the CRC bits with a scrambling pattern to protect against blind decoding
+% Zero-pad the scrambling pattern if shorter than P
+scrambled_crc_bits = xor(crc_bits, [zeros(1, P - length(crc_scrambling_pattern)), crc_scrambling_pattern]);
+
+% Append scrambled CRC bits to the message
 b = [a, scrambled_crc_bits];
 
-% Interleave the information and CRC bits.
+% ---------- Step 3: CRC interleaving ----------
+% Permute the bits before Polar encoding
 c = b(crc_interleaver_pattern);
 
-% Position the information and CRC bits within the input to the polar 
-% encoder kernal.
-u = zeros(1,N);
+% ---------- Step 4: Bit insertion for Polar encoding ----------
+% Create zero vector u of length N and place c into info bit positions
+u = zeros(1, N);
 u(info_bit_pattern) = c;
 
-% Perform the polar encoder kernal operation.
+% ---------- Step 5: Polar encoding ----------
+% Apply the generator matrix for Polar encoding
 G_N = get_G_N(N);
-d = mod(u*G_N,2);
+d = mod(u * G_N, 2);
 
-% Extract the encoded bits from the output of the polar encoder kernal.
+% ---------- Step 6: Rate matching ----------
+% Output the final rate-matched polar codeword
 e = d(rate_matching_pattern);
 
 end

@@ -1,75 +1,72 @@
 function e = DCA_polar_encoder(a, crc_polynomial_pattern, crc_interleaver_pattern, info_bit_pattern, rate_matching_pattern)
-% DCA_POLAR_ENCODER Distributed-CRC-Aided (DCA) polar encoder.
-%   e = CA_POLAR_ENCODER(a, crc_polynomial_pattern, crc_interleaver_pattern, info_bit_pattern, rate_matching_pattern) 
-%   encodes the information bit sequence a, in order to obtain the encoded 
-%   bit sequence e.
+% DCA_POLAR_ENCODER - Custom implementation of a Polar encoder for DCI or general use.
 %
-%   a should be a binary row vector comprising A number of bits, each 
-%   having the value 0 or 1. 
+% Inputs:
+%   a: Input message bits (1 x A)
+%   crc_polynomial_pattern: CRC polynomial vector (e.g., [1 0 1 1] for x^3 + x + 1)
+%   crc_interleaver_pattern: Permutation pattern for CRC interleaving (1 x K)
+%   info_bit_pattern: Binary mask (1 x N) with 1s at information bit positions (K total)
+%   rate_matching_pattern: Index vector to perform rate matching (1 x E)
 %
-%   crc_polynomial_pattern should be a binary row vector comprising P+1
-%   number of bits, each having the value 0 or 1. These bits parameterise a
-%   Cyclic Redundancy Check (CRC) comprising P bits. Each bit provides the
-%   coefficient of the corresponding element in the CRC generator
-%   polynomial. From left to right, the bits provide the coefficients for
-%   the elements D^P, D^P-1, D^P-2, ..., D^2, D, 1.
-%
-%   crc_interleaver_pattern should be a row vector comprising K number of
-%   integers, each having a unique value in the range 1 to K. Each integer
-%   identifies which one of the K information or CRC bits provides the 
-%   corresponding bit in the input to the polar encoder kernal.
-%
-%   info_bit_pattern should be a row vector comprising N number of logical 
-%   elements, each having the value true or false. The number of elements 
-%   in info_bit_pattern having the value true should be K, where K = A+P. 
-%   These elements having the value true identify the positions of the 
-%   information and CRC bits within the input to the polar encoder kernal.
-%
-%   rate_matching_pattern should be a row vector comprising E number of
-%   integers, each having a value in the range 1 to N. Each integer
-%   identifies which one of the N outputs from the polar encoder kernal
-%   provides the corresponding bit in the encoded bit sequence e.
-%
-%   e will be a binary row vector comprising E number of bits, each having
-%   the value 0 or 1.
-%
-%   See also DCA_POLAR_DECODER
+% Output:
+%   e: Encoded and rate-matched polar codeword (1 x E)
 
+% A = message length
 A = length(a);
-P = length(crc_polynomial_pattern)-1;
+
+% P = number of CRC bits (length of polynomial - 1)
+P = length(crc_polynomial_pattern) - 1;
+
+% K = length after CRC (i.e., message + CRC)
 K = length(crc_interleaver_pattern);
+
+% N = polar code block length (must be power of 2)
 N = length(info_bit_pattern);
 
-if A+P ~= K
+% ---------- Input validation ----------
+
+if A + P ~= K
     error('A+P should equal K');
 end
+
 if log2(N) ~= round(log2(N))
     error('N should be a power of 2');
 end
+
 if sum(info_bit_pattern) ~= K
     error('info_bit_pattern should contain K number of ones.');
 end
+
 if max(rate_matching_pattern) > N
     error('rate_matching_pattern is not compatible with N');
 end
 
-% Generate the CRC bits and append them to the information bits.
-G_P = get_crc_generator_matrix(A,crc_polynomial_pattern);
-b = [a, mod(a*G_P,2)];
+% ---------- Step 1: CRC encoding ----------
+% Generate CRC generator matrix G_P
+G_P = get_crc_generator_matrix(A, crc_polynomial_pattern);
 
-% Interleave the information and CRC bits.
+% Append CRC bits to message: b = [message, CRC]
+% CRC = a * G_P (mod 2)
+b = [a, mod(a * G_P, 2)];
+
+% ---------- Step 2: CRC interleaving ----------
+% Rearrange bits according to crc_interleaver_pattern
 c = b(crc_interleaver_pattern);
 
-% Position the information and CRC bits within the input to the polar 
-% encoder kernal.
-u = zeros(1,N);
+% ---------- Step 3: Insert into information bit positions ----------
+% u is a length-N zero vector; fill only info bit locations with c
+u = zeros(1, N);
 u(info_bit_pattern) = c;
 
-% Perform the polar encoder kernal operation.
+% ---------- Step 4: Polar encoding ----------
+% Generate Polar generator matrix G_N
 G_N = get_G_N(N);
-d = mod(u*G_N,2);
 
-% Extract the encoded bits from the output of the polar encoder kernal.
+% Encode: d = u * G_N (mod 2)
+d = mod(u * G_N, 2);
+
+% ---------- Step 5: Rate matching ----------
+% Select bits using the given rate matching pattern
 e = d(rate_matching_pattern);
 
 end
